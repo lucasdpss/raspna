@@ -14,6 +14,8 @@ green_led_port = 22
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(relay_port, GPIO.OUT)
+GPIO.setup(red_led_port, GPIO.OUT)
+GPIO.setup(green_led_port, GPIO.OUT)
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
