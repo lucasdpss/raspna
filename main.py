@@ -168,6 +168,8 @@ class Consumer(object):
             GPIO.output(relay_port, True)
             time.sleep(2)
             GPIO.output(relay_port, False)
+        GPIO.output(red_led_port, False)
+        GPIO.output(green_led_port, True) 
 
     def acknowledge_message(self, delivery_tag):
         LOGGER.info('Acknowledging message %s', delivery_tag)
