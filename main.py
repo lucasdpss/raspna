@@ -5,17 +5,16 @@ import logging
 import time
 import pika
 from pika.exchange_type import ExchangeType
+from datetime import datetime
 import RPi.GPIO as GPIO
 
 relay_port = 4
-red_led_port = 27
-green_led_port = 22
+red_led_port = 23
 
-
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(relay_port, GPIO.OUT)
 GPIO.setup(red_led_port, GPIO.OUT)
-GPIO.setup(green_led_port, GPIO.OUT)
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
@@ -24,10 +23,10 @@ logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT)
 
 
 class Consumer(object):
-    EXCHANGE = 'message'
-    EXCHANGE_TYPE = ExchangeType.topic
-    QUEUE = 'rpicontrol'
-    ROUTING_KEY = 'rpicontrol'
+    EXCHANGE = 'rpimessage'
+    EXCHANGE_TYPE = ExchangeType.direct
+    QUEUE = 'rpirelay'
+    ROUTING_KEY = 'rpirelay'
 
     def __init__(self, amqp_url):
         self.should_reconnect = False
@@ -58,15 +57,16 @@ class Consumer(object):
         else:
             LOGGER.info('Closing connection')
             self._connection.close()
+        GPIO.output(red_led_port, True)
 
     def on_connection_open(self, _unused_connection):
         LOGGER.info('Connection opened')
+        GPIO.output(red_led_port, False)
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection, err):
         LOGGER.error('Connection open failed: %s', err)
         GPIO.output(red_led_port, True)
-        GPIO.output(green_led_port, False) 
         self.reconnect()
 
     def on_connection_closed(self, _unused_connection, reason):
@@ -168,8 +168,8 @@ class Consumer(object):
             GPIO.output(relay_port, True)
             time.sleep(2)
             GPIO.output(relay_port, False)
+            f.write("opened:" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n")
         GPIO.output(red_led_port, False)
-        GPIO.output(green_led_port, True) 
 
     def acknowledge_message(self, delivery_tag):
         LOGGER.info('Acknowledging message %s', delivery_tag)
@@ -242,11 +242,14 @@ class ReconnectingConsumer(object):
         return self._reconnect_delay
 
 def main():
-    amqp_url = 'amqp://guest:guest@localhost:5672/%2F'
+    GPIO.output(relay_port, False)
+    global f
+    f = open("log.txt", "a")
+    f.write("\n\nstarted:" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n")
+    amqp_url = 'amqp://guest:guest@192.168.15.7:5672/%2F'
     consumer = ReconnectingConsumer(amqp_url)
     consumer.run()
 
 
 if __name__ == '__main__':
-    GPIO.output(relay_port, False)
     main()
