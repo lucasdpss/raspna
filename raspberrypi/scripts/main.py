@@ -126,7 +126,7 @@ class Consumer(object):
     def setup_queue(self, queue_name):
         LOGGER.info('Declaring queue %s', queue_name)
         cb = functools.partial(self.on_queue_declareok, userdata=queue_name)
-        self._channel.queue_declare(queue=queue_name, callback=cb)
+        self._channel.queue_declare(queue=queue_name, auto_delete=True, arguments={'x-message-ttl' : 2000}, callback=cb)
 
     def on_queue_declareok(self, _unused_frame, userdata):
         queue_name = userdata

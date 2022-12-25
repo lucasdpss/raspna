@@ -11,6 +11,8 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class MainActivity extends AppCompatActivity {
@@ -126,10 +128,12 @@ public class MainActivity extends AppCompatActivity {
             factory.setPassword("guest");
 
             try {
+                Map<String, Object> args = new HashMap<String, Object>();
+                args.put("x-message-ttl", 2000);
                 connection = factory.newConnection();
                 channel = connection.createChannel();
-                channel.exchangeDeclare(EXCHANGE_NAME, "direct", false);  //mudar no raspi para "direc" tbm
-                channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+                channel.exchangeDeclare(EXCHANGE_NAME, "direct", false);
+                channel.queueDeclare(QUEUE_NAME, false, false, true, args);
                 channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, ROUTING_KEY);
                 isConnected = true;
                 runOnUiThread(new Runnable() {
