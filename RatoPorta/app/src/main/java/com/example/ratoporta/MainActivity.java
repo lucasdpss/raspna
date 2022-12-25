@@ -122,8 +122,8 @@ public class MainActivity extends AppCompatActivity {
         public void run(){
             factory = new ConnectionFactory();
             factory.setHost("localhost");
-            factory.setUsername("user");
-            factory.setPassword("passwd");
+            factory.setUsername("guest");
+            factory.setPassword("guest");
 
             try {
                 connection = factory.newConnection();

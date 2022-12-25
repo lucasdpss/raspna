@@ -58,15 +58,24 @@ class Consumer(object):
             LOGGER.info('Closing connection')
             self._connection.close()
         GPIO.output(red_led_port, True)
+        f = open(file_path, "a")
+        f.write("Connection with server closed:" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n")
+        f.close()
 
     def on_connection_open(self, _unused_connection):
         LOGGER.info('Connection opened')
         GPIO.output(red_led_port, False)
+        f = open(file_path, "a")
+        f.write("Established conn with server:" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n")
+        f.close()
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection, err):
         LOGGER.error('Connection open failed: %s', err)
         GPIO.output(red_led_port, True)
+        f = open(file_path, "a")
+        f.write("Trying to reconnect with server:" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n")
+        f.close()
         self.reconnect()
 
     def on_connection_closed(self, _unused_connection, reason):
@@ -166,9 +175,11 @@ class Consumer(object):
         self.acknowledge_message(basic_deliver.delivery_tag)
         if(body == b"on"):
             GPIO.output(relay_port, True)
-            time.sleep(2)
+            time.sleep(1)
             GPIO.output(relay_port, False)
+            f = open(file_path, "a")
             f.write("opened:" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n")
+            f.close()
         GPIO.output(red_led_port, False)
 
     def acknowledge_message(self, delivery_tag):
@@ -242,11 +253,13 @@ class ReconnectingConsumer(object):
         return self._reconnect_delay
 
 def main():
-    GPIO.output(relay_port, False)
-    global f
-    f = open("log.txt", "a")
+    GPIO.output(relay_port, False)  
+    global file_path 
+    file_path = "/home/pi/log.txt"
+    f = open(file_path, "a")
     f.write("\n\nstarted:" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n")
-    amqp_url = 'amqp://guest:guest@192.168.15.7:5672/%2F'
+    f.close()
+    amqp_url = 'amqp://guest:guest@localhost:5672/%2F'
     consumer = ReconnectingConsumer(amqp_url)
     consumer.run()
 

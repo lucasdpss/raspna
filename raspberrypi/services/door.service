@@ -1,0 +1,13 @@
+ [Unit]
+ Description=Open door based on a relay 
+ After=multi-user.target
+
+ [Service]
+ User=pi
+ Type=idle
+ WorkingDirectory=/home/pi
+ ExecStart=/usr/bin/python3 main.py
+ Restart=on-failure 
+
+ [Install]
+ WantedBy=multi-user.target

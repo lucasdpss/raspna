@@ -1,0 +1,15 @@
+ [Unit]
+ Description=log health of device internet connection on regular interval 
+ After=multi-user.target
+
+ [Service]
+ User=pi
+ Type=idle
+ WorkingDirectory=/home/pi
+ ExecStart=/usr/bin/python3 /home/pi/test_internet_conn.py
+ Restart=always
+ RestartSec=60s
+ StandardOutput=null
+
+ [Install]
+ WantedBy=multi-user.target
