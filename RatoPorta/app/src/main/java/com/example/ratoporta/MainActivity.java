@@ -1,26 +1,27 @@
 package com.example.ratoporta;
 
-import androidx.appcompat.app.AppCompatActivity;
+import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.View;
 import android.widget.Button;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.rabbitmq.client.AlreadyClosedException;
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 public class MainActivity extends AppCompatActivity {
-    //Definicoes da RabbitMQ
-    private String QUEUE_NAME = "rpirelay";
-    private String ROUTING_KEY = "rpirelay";
-    private String EXCHANGE_NAME = "rpimessage";
-    private ConnectionFactory factory;
+    private final String ROUTING_KEY = "rpirelay";
+    private final String EXCHANGE_NAME = "rpimessage";
     private Connection connection;
     private Channel channel;
     private PublishThread publishThread;
@@ -31,11 +32,12 @@ public class MainActivity extends AppCompatActivity {
     //Definicao do botao
     private Button button;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getSupportActionBar().hide(); //esconde a barra de titulo
+        Objects.requireNonNull(getSupportActionBar()).hide(); //esconde a barra de titulo
 
         //Thread de conexao
         tryingToConnect = true;
@@ -44,33 +46,28 @@ public class MainActivity extends AppCompatActivity {
         connectThread.start();
 
         //Configura botao de conectar
-        button = (Button) findViewById(R.id.button_open_door);
+        button = findViewById(R.id.button_open_door);
         button.setEnabled(false);
         button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
         button.setAlpha(0.96f);
         button.setText("Conectando...");
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if(connection != null && connection.isOpen() && channel != null && channel.isOpen()){
-                    publishThread = new PublishThread();
-                    publishThread.start();
-                }else{
-                    if(!tryingToConnect){
-                        tryingToConnect = true;
-                        isConnected = false;
+        button.setOnClickListener(v -> {
+            if(connection != null && connection.isOpen() && channel != null && channel.isOpen()){
+                publishThread = new PublishThread();
+                publishThread.start();
+            }else{
+                if(!tryingToConnect){
+                    tryingToConnect = true;
+                    isConnected = false;
 
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                button.setText("Conectando...");
-                                button.setEnabled(false);
-                                button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
-                            }
-                        });
+                    runOnUiThread(() -> {
+                        button.setText("Conectando...");
+                        button.setEnabled(false);
+                        button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
+                    });
 
-                        connectThread = new ConnectThread();
-                        connectThread.start();
-                    }
+                    connectThread = new ConnectThread();
+                    connectThread.start();
                 }
             }
         });
@@ -96,21 +93,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onResume() {
         super.onResume();
         if(!isConnected && !tryingToConnect){
             tryingToConnect = true;
-            isConnected = false;
 
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    button.setText("Conectando...");
-                    button.setEnabled(false);
-                    button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
+            runOnUiThread(() -> {
+                button.setText("Conectando...");
+                button.setEnabled(false);
+                button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
 
-                }
             });
 
             connectThread = new ConnectThread();
@@ -120,39 +114,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     class ConnectThread extends Thread {
+        @SuppressLint("SetTextI18n")
         @Override
         public void run(){
-            factory = new ConnectionFactory();
-            factory.setHost("localhost");
-            factory.setUsername("guest");
-            factory.setPassword("guest");
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setHost("192.168.1.3");
+            factory.setUsername("rasp");
+            factory.setPassword("rissa");
 
             try {
-                Map<String, Object> args = new HashMap<String, Object>();
+                Map<String, Object> args = new HashMap<>();
                 args.put("x-message-ttl", 2000);
                 connection = factory.newConnection();
                 channel = connection.createChannel();
                 channel.exchangeDeclare(EXCHANGE_NAME, "direct", false);
+                //Definicoes da RabbitMQ
+                String QUEUE_NAME = "rpirelay";
                 channel.queueDeclare(QUEUE_NAME, false, false, true, args);
                 channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, ROUTING_KEY);
                 isConnected = true;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        button.setText("Abrir porta");
-                        button.setEnabled(true);
-                        button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.verde_rep))));
-                    }
+                runOnUiThread(() -> {
+                    button.setText("Abrir porta");
+                    button.setEnabled(true);
+                    button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.verde_rep))));
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        button.setText("Sem conexão :(");
-                        button.setEnabled(false);
-                        button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
-                    }
+                runOnUiThread(() -> {
+                    button.setText("Sem conexão :(");
+                    button.setEnabled(false);
+                    button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
                 });
             }
             tryingToConnect = false;
@@ -160,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     class PublishThread extends Thread {
+        @SuppressLint("SetTextI18n")
         @Override
         public void run(){
             try {
@@ -169,38 +161,26 @@ public class MainActivity extends AppCompatActivity {
 
 
                 //Delay para habilitar o botao novamente
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        button.setText("Porta aberta");
-                        button.setEnabled(false);
-                        button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
-                    }
+                runOnUiThread(() -> {
+                    button.setText("Porta aberta");
+                    button.setEnabled(false);
+                    button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.gray_disabled))));
                 });
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        final Handler handler = new Handler();
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                // Faca depois de 4s
-                                button.setText("Abrir porta");
-                                button.setEnabled(true);
-                                button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.verde_rep))));
-                            }
-                        }, 4000);
-                    }
+                runOnUiThread(() -> {
+                    final Handler handler = new Handler();
+                    handler.postDelayed(() -> {
+                        // Faca depois de 4s
+                        button.setText("Abrir porta");
+                        button.setEnabled(true);
+                        button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.verde_rep))));
+                    }, 4000);
                 });
             } catch (IOException e) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        button.setText("Não Abriu :(");
-                        button.setEnabled(false);
-                        button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.verde_rep))));
-                    }
+                runOnUiThread(() -> {
+                    button.setText("Não Abriu :(");
+                    button.setEnabled(false);
+                    button.setBackgroundTintList(ColorStateList.valueOf((getResources().getColor(R.color.verde_rep))));
                 });
                 System.out.println("Rabbitmq problem");
             }
